@@ -1,0 +1,13 @@
+{
+  "name": "gurukul-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vanilla HTML/CSS/TS frontend for Gurukul Rewards (compiles to js/ via tsc, no bundler/framework).",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

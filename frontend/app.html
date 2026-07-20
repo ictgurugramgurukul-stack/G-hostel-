@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Gurukul Rewards</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <!-- Optional: set window.GURUKUL_API_BASE before this script tag to point at a
+       non-default backend URL, e.g. <script>window.GURUKUL_API_BASE = "https://api.example.com";</script> -->
+</head>
+<body>
+  <div class="top-logo-bar">
+    <img src="assets/school-logo.jpg" alt="Shree Swaminarayan Gurukul International School Gurugram" class="school-logo" />
+    <div class="school-name">Shree Swaminarayan Gurukul International School<small>Gurugram</small></div>
+  </div>
+  <header class="app-header" id="app-header"></header>
+  <main class="container-lg" style="padding-top:1.5rem; padding-bottom:3rem;" id="app-content"></main>
+  <div id="toast-root"></div>
+  <script type="module" src="js/router.js"></script>
+</body>
+</html>
