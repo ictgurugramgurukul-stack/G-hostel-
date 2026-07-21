@@ -185,7 +185,7 @@ tbody tr:last-child td { border-bottom: none; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ---------- App shell / nav ---------- */
-.app-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--card) 85%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+.app-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--card) 92%, transparent); border-bottom: 1px solid var(--border); }
 .app-header-inner { max-width: 80rem; margin: 0 auto; padding: 0 1rem; height: 4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .brand { display: flex; align-items: center; gap: .5rem; }
 .brand .logo { height: 2.25rem; width: 2.25rem; border-radius: .75rem; display: flex; align-items: center; justify-content: center; color: white; }
