@@ -208,16 +208,14 @@ function renderAwardPanel(): void {
     awardBtn.disabled = true;
     const remarks = (document.getElementById("remarks-input") as HTMLTextAreaElement).value;
     try {
-      const res = await pointsApi.award({
+      await pointsApi.award({
         student_id: selectedStudent.id,
         activity_id: selectedActivityId || null,
         points,
         remarks,
       });
       toast.success(`${points >= 0 ? "Awarded" : "Deducted"} ${Math.abs(points)} points to ${selectedStudent.name}`);
-      selectedStudent = res.student;
-      const rankRes = await pointsApi.rank(selectedStudent.id);
-      selectedRank = rankRes.rank;
+      selectedStudent = null;
       renderAwardPanel();
       const statsRes = await pointsApi.statsToday();
       const recentBox = document.getElementById("recent-activity");

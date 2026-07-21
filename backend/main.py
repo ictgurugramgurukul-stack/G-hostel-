@@ -43,12 +43,59 @@ app.include_router(analytics.router)
 
 
 DEFAULT_ACTIVITIES = [
-    {"name": "Cleanliness & Hygiene", "description": "Kept room/area clean and tidy", "points": 10},
-    {"name": "Discipline & Punctuality", "description": "On time and well-behaved", "points": 10},
-    {"name": "Academic Excellence", "description": "Outstanding classroom/exam performance", "points": 20},
-    {"name": "Sports Achievement", "description": "Excelled in sports or games", "points": 15},
-    {"name": "Helping Others", "description": "Helped a fellow student or staff member", "points": 10},
+    {"name": "Academic Excellence", "description": "Outstanding classroom/exam performance", "points": 5},
+    {"name": "Bed Made Properly", "description": None, "points": 3},
+    {"name": "Breaking line", "description": None, "points": -5},
+    {"name": "Bringing Prohibited Items with onion garlic", "description": None, "points": -10},
+    {"name": "Bullying L1", "description": None, "points": -5},
+    {"name": "Bullying L2", "description": None, "points": -10},
+    {"name": "Bullying L3", "description": None, "points": -15},
+    {"name": "Cleanliness & Hygiene", "description": "Kept room/area clean and tidy", "points": 5},
+    {"name": "Cupboard Organized", "description": None, "points": 3},
+    {"name": "Damaging School Property", "description": None, "points": -15},
+    {"name": "Discipline & Punctuality", "description": "On time and well-behaved", "points": 5},
+    {"name": "Disrespecting Teachers/Elders", "description": None, "points": -10},
+    {"name": "Disturbing in study hours", "description": None, "points": -3},
+    {"name": "Encouraging Other Students", "description": None, "points": 2},
+    {"name": "Fighting with Students", "description": None, "points": -10},
+    {"name": "Following Hostel Rules", "description": None, "points": 5},
+    {"name": "Good Behaviour", "description": None, "points": 5},
+    {"name": "Helping Friends", "description": None, "points": 5},
+    {"name": "Helping New Students Settle In", "description": None, "points": 3},
+    {"name": "Helping Others", "description": "Helped a fellow student or staff member", "points": 5},
+    {"name": "Homework Completed", "description": None, "points": 5},
+    {"name": "Improvement in Discipline", "description": None, "points": 5},
+    {"name": "Late for Prayer", "description": None, "points": -5},
+    {"name": "Late for Study Time", "description": None, "points": -3},
+    {"name": "Leading Prayer/Assembly", "description": None, "points": 5},
+    {"name": "Maintaining Silence During Evening Prayer", "description": None, "points": 3},
+    {"name": "Morning Prayer Attendance", "description": None, "points": 1},
+    {"name": "No Tika-Tilak", "description": None, "points": -5},
+    {"name": "Not Done Homework", "description": None, "points": -3},
+    {"name": "Not Returning Borrowed Items on Time", "description": None, "points": -5},
+    {"name": "On-Time for All Activities", "description": None, "points": 5},
+    {"name": "Outstanding Discipline", "description": None, "points": 10},
+    {"name": "Participating in Seva", "description": None, "points": 3},
+    {"name": "Participating in Yoga & Meditation", "description": None, "points": 3},
+    {"name": "Respecting Teachers & Elders", "description": None, "points": 5},
+    {"name": "Returning Borrowed Items on Time", "description": None, "points": 3},
+    {"name": "Room Cleanliness", "description": None, "points": 3},
     {"name": "Rule Violation", "description": "Broke hostel rules", "points": -10},
+    {"name": "Saving Water & Electricity", "description": None, "points": 3},
+    {"name": "Speaking in Hindi L1", "description": None, "points": -5},
+    {"name": "Speaking in Hindi L2", "description": None, "points": -10},
+    {"name": "Sports Achievement", "description": "Excelled in sports or games", "points": 15},
+    {"name": "Sports Participation", "description": None, "points": 5},
+    {"name": "Talking During Study", "description": None, "points": -3},
+    {"name": "Uniform Not Proper", "description": None, "points": -3},
+    {"name": "Untidy Bed", "description": None, "points": -3},
+    {"name": "Untidy Room", "description": None, "points": -5},
+    {"name": "Using Bad Language L1", "description": None, "points": -5},
+    {"name": "Using Bad Language L2", "description": None, "points": -10},
+    {"name": "Using Bad Language L3", "description": None, "points": -15},
+    {"name": "Wasting Food", "description": None, "points": -5},
+    {"name": "Wearing Proper Uniform", "description": None, "points": 1},
+    {"name": "Winning Competition", "description": None, "points": 10},
 ]
 DEFAULT_HOUSES = [
     {"name": "Atharvaveda", "color": "#dc2626"},
@@ -66,6 +113,16 @@ def on_startup():
         if db.query(Activity).count() == 0:
             for a in DEFAULT_ACTIVITIES:
                 db.add(Activity(**a, is_positive=a["points"] >= 0))
+        else:
+            # Upgrade path: add any default activities that aren't in the
+            # database yet (matched by name, case-insensitively), without
+            # touching or overwriting activities that already exist -
+            # including default ones an admin may have since edited.
+            existing_names = {n.lower() for (n,) in db.query(Activity.name).all()}
+            for a in DEFAULT_ACTIVITIES:
+                if a["name"].lower() not in existing_names:
+                    db.add(Activity(**a, is_positive=a["points"] >= 0))
+                    existing_names.add(a["name"].lower())
         if db.query(House).count() == 0:
             for h in DEFAULT_HOUSES:
                 db.add(House(**h))
