@@ -56,7 +56,7 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
 .justify-between { justify-content: space-between; }
 .justify-center { justify-content: center; }
 .gap-1 { gap: .25rem; } .gap-2 { gap: .5rem; } .gap-3 { gap: .75rem; } .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; }
-.flex-1 { flex: 1 1 0%; }
+.flex-1 { flex: 1 1 0%; min-width: 0; }
 .flex-wrap { flex-wrap: wrap; }
 .text-center { text-align: center; }
 .text-right { text-align: right; }
@@ -111,6 +111,7 @@ button, input, textarea, select { font-family: inherit; font-size: inherit; }
   background: var(--card); color: var(--card-foreground);
   border: 1px solid var(--border); border-radius: 1rem;
   box-shadow: 0 1px 2px rgba(20, 20, 40, .04);
+  min-width: 0;
 }
 .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
 .card-title { font-size: 1rem; font-weight: 700; margin: 0; }
@@ -189,15 +190,40 @@ tbody tr:last-child td { border-bottom: none; }
 .brand { display: flex; align-items: center; gap: .5rem; }
 .brand .logo { height: 2.25rem; width: 2.25rem; border-radius: .75rem; display: flex; align-items: center; justify-content: center; color: white; }
 .brand span { font-size: 1.125rem; font-weight: 800; }
-.main-nav { display: none; align-items: center; gap: .25rem; }
-@media (min-width: 768px) { .main-nav { display: flex; } }
-.main-nav a {
-  display: flex; align-items: center; gap: .4rem; padding: .5rem .75rem; border-radius: .6rem;
-  font-size: .875rem; font-weight: 600; color: var(--muted-foreground);
+
+/* Mobile (<768px): nav becomes a fixed bottom tab bar so it's always reachable. */
+.main-nav {
+  display: flex; align-items: center; justify-content: space-around;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 45;
+  background: var(--card); border-top: 1px solid var(--border);
+  padding: .35rem .25rem calc(.35rem + env(safe-area-inset-bottom, 0px));
+  gap: 0;
 }
+.main-nav a {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem;
+  padding: .35rem .5rem; border-radius: .6rem; flex: 1; min-width: 0;
+  font-size: .65rem; font-weight: 600; color: var(--muted-foreground); text-align: center;
+}
+.main-nav a svg { height: 1.2rem; width: 1.2rem; }
+
+/* Desktop (>=768px): nav moves back into the header as a normal horizontal row. */
+@media (min-width: 768px) {
+  .main-nav {
+    position: static; flex: none; justify-content: flex-start;
+    border-top: none; background: transparent; padding: 0; gap: .25rem;
+  }
+  .main-nav a { flex-direction: row; flex: none; font-size: .875rem; gap: .4rem; padding: .5rem .75rem; }
+  .main-nav a svg { height: 1rem; width: 1rem; }
+}
+
 .main-nav a:hover { background: var(--muted); color: var(--foreground); }
 .main-nav a.active { background: color-mix(in oklab, var(--primary) 10%, transparent); color: var(--primary); }
 .nav-badge { background: var(--accent); color: var(--accent-foreground); border-radius: 999px; padding: 0 .4rem; font-size: .7rem; font-weight: 700; }
+
+/* Keep page content from being hidden behind the fixed bottom nav on mobile. */
+@media (max-width: 767px) {
+  #app-content { padding-bottom: 5.5rem !important; }
+}
 
 /* ---------- Stat card ---------- */
 .stat-card { display: flex; align-items: center; gap: .75rem; padding: 1rem; }

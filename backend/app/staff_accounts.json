@@ -4,5 +4,11 @@
     "email": "gurugramgurukul@gmail.com",
     "password": "Gurukul@123",
     "type": "admin"
+  },
+  {
+    "name": "Dayanand",
+    "email": "Dayanand@gurukul.org",
+    "password": "Dayanand@123",
+    "type": "teacher"
   }
 ]
