@@ -30,7 +30,7 @@ export function renderShell(me, activeHash) {
           <p class="font-semibold text-sm" style="margin:0">${escapeName(me.full_name || "User")}</p>
           <p class="text-xs muted" style="margin:0;text-transform:capitalize">${me.role.replace("_", " ")}</p>
         </div>
-        <button class="btn btn-ghost btn-icon" id="sign-out-btn" title="Sign out">${icon("log-out")}</button>
+        <button type="button" class="btn btn-ghost btn-icon" id="sign-out-btn" title="Sign out">${icon("log-out")}</button>
       </div>
     </div>
   `;

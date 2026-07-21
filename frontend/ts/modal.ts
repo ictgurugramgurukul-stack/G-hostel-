@@ -34,8 +34,8 @@ export function confirmDialog(opts: { title: string; description: string; confir
       title: opts.title,
       bodyHtml: `<p class="muted">${opts.description}</p>`,
       footerHtml: `
-        <button class="btn btn-outline" data-action="cancel">Cancel</button>
-        <button class="btn btn-destructive" data-action="confirm">${opts.confirmLabel || "Confirm"}</button>
+        <button type="button" class="btn btn-outline" data-action="cancel">Cancel</button>
+        <button type="button" class="btn btn-destructive" data-action="confirm">${opts.confirmLabel || "Confirm"}</button>
       `,
       onMount: (root) => {
         root.querySelector('[data-action="cancel"]')?.addEventListener("click", () => {
