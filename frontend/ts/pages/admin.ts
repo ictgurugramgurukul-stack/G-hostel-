@@ -46,7 +46,7 @@ export async function renderAdminPage(container: HTMLElement, me: Me): Promise<v
 }
 
 function tabBtn(id: string, label: string): string {
-  return `<button type="button" class="tab-trigger ${activeTab === id ? "active" : ""}" data-tab="${id}">${label}</button>`;
+  return `<button class="tab-trigger ${activeTab === id ? "active" : ""}" data-tab="${id}">${label}</button>`;
 }
 
 async function renderTabs(container: HTMLElement, stats: any): Promise<void> {
@@ -70,7 +70,7 @@ async function renderStudentsTab(box: HTMLElement): Promise<void> {
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Manage Students</h3>
-        <button type="button" class="btn btn-primary btn-sm" id="add-student-btn">${icon("plus")} Add Student</button>
+        <button class="btn btn-primary btn-sm" id="add-student-btn">${icon("plus")} Add Student</button>
       </div>
       <div class="card-content">
         <div class="input-icon-wrap mb-3">
@@ -116,8 +116,8 @@ function renderStudentRows(students: any[]): void {
       <td>${escapeHtml(s.house || "\u2014")}</td>
       <td class="font-semibold">${s.total_points}</td>
       <td>
-        <button type="button" class="btn btn-ghost btn-icon" data-cert="${s.id}" title="Issue certificate">${icon("scroll-text")}</button>
-        <button type="button" class="btn btn-ghost btn-icon" data-del="${s.id}" title="Delete">${icon("trash-2")}</button>
+        <button class="btn btn-ghost btn-icon" data-cert="${s.id}" title="Issue certificate">${icon("scroll-text")}</button>
+        <button class="btn btn-ghost btn-icon" data-del="${s.id}" title="Delete">${icon("trash-2")}</button>
       </td>
     </tr>`
           )
@@ -175,7 +175,7 @@ function openStudentModal(): void {
         <p class="text-xs muted" style="margin:.25rem 0 0">This becomes the student's login (with their Member ID) for their dashboard. Leave blank to auto-generate one.</p>
       </div>
     `,
-    footerHtml: `<button type="button" class="btn btn-outline" data-action="cancel">Cancel</button><button type="button" class="btn btn-primary" data-action="save">Save</button>`,
+    footerHtml: `<button class="btn btn-outline" data-action="cancel">Cancel</button><button class="btn btn-primary" data-action="save">Save</button>`,
     onMount: (root) => {
       root.querySelector('[data-action="cancel"]')?.addEventListener("click", () => close());
       root.querySelector('[data-action="save"]')?.addEventListener("click", async () => {
@@ -221,7 +221,7 @@ function openCertificateModal(studentId: string, students: any[]): void {
       <div class="field"><label>Title *</label><input class="input" id="c-title" placeholder="e.g. Best Discipline Award" /></div>
       <div class="field"><label>Description</label><textarea class="input" id="c-desc" rows="3"></textarea></div>
     `,
-    footerHtml: `<button type="button" class="btn btn-outline" data-action="cancel">Cancel</button><button type="button" class="btn btn-primary" data-action="issue">Issue</button>`,
+    footerHtml: `<button class="btn btn-outline" data-action="cancel">Cancel</button><button class="btn btn-primary" data-action="issue">Issue</button>`,
     onMount: (root) => {
       root.querySelector('[data-action="cancel"]')?.addEventListener("click", () => close());
       root.querySelector('[data-action="issue"]')?.addEventListener("click", async () => {
@@ -250,7 +250,7 @@ async function renderActivitiesTab(box: HTMLElement): Promise<void> {
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">Activities</h3>
-        <button type="button" class="btn btn-primary btn-sm" id="add-activity-btn">${icon("plus")} New Activity</button>
+        <button class="btn btn-primary btn-sm" id="add-activity-btn">${icon("plus")} New Activity</button>
       </div>
       <div class="card-content" id="activities-list"></div>
     </div>
@@ -275,7 +275,7 @@ function renderActivityRows(): void {
       </div>
       <div class="flex items-center gap-2">
         <label class="switch"><input type="checkbox" data-toggle="${a.id}" ${a.is_active ? "checked" : ""} /><span class="slider"></span></label>
-        <button type="button" class="btn btn-ghost btn-icon" data-edit="${a.id}">${icon("pencil")}</button>
+        <button class="btn btn-ghost btn-icon" data-edit="${a.id}">${icon("pencil")}</button>
       </div>
     </div>`
           )
@@ -301,7 +301,7 @@ function openActivityModal(existing?: any): void {
       <div class="field"><label>Description</label><textarea class="input" id="a-desc" rows="2">${existing ? escapeHtml(existing.description || "") : ""}</textarea></div>
       <div class="field"><label>Points (negative to deduct)</label><input class="input" type="number" id="a-points" value="${existing ? existing.points : 10}" /></div>
     `,
-    footerHtml: `<button type="button" class="btn btn-outline" data-action="cancel">Cancel</button><button type="button" class="btn btn-primary" data-action="save">Save</button>`,
+    footerHtml: `<button class="btn btn-outline" data-action="cancel">Cancel</button><button class="btn btn-primary" data-action="save">Save</button>`,
     onMount: (root) => {
       root.querySelector('[data-action="cancel"]')?.addEventListener("click", () => close());
       root.querySelector('[data-action="save"]')?.addEventListener("click", async () => {

@@ -24,7 +24,7 @@ async function load(container: HTMLElement): Promise<void> {
     <div class="flex items-center justify-between flex-wrap gap-3">
       <h1 class="font-display text-lg font-bold" style="font-size:1.5rem">Leaderboard</h1>
       <div class="tabs-list" id="period-tabs">
-        ${["overall", "weekly", "monthly"].map((p) => `<button type="button" class="tab-trigger ${period === p ? "active" : ""}" data-period="${p}">${p[0].toUpperCase()}${p.slice(1)}</button>`).join("")}
+        ${["overall", "weekly", "monthly"].map((p) => `<button class="tab-trigger ${period === p ? "active" : ""}" data-period="${p}">${p[0].toUpperCase()}${p.slice(1)}</button>`).join("")}
       </div>
     </div>
 

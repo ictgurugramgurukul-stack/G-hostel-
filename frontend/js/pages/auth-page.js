@@ -19,8 +19,8 @@ function render() {
         </div>
         <div class="auth-box">
           <div class="tabs-list mb-4 w-full" style="display:grid;grid-template-columns:1fr 1fr;">
-            <button type="button" class="tab-trigger ${activeTab === "staff" ? "active" : ""}" data-tab="staff">Teacher / Admin</button>
-            <button type="button" class="tab-trigger ${activeTab === "student" ? "active" : ""}" data-tab="student">Student</button>
+            <button class="tab-trigger ${activeTab === "staff" ? "active" : ""}" data-tab="staff">Teacher / Admin</button>
+            <button class="tab-trigger ${activeTab === "student" ? "active" : ""}" data-tab="student">Student</button>
           </div>
 
           <div class="tab-panel ${activeTab === "staff" ? "active" : ""}" id="panel-staff">

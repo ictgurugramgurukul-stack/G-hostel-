@@ -78,7 +78,7 @@ export async function renderTeacherPage(container, me) {
                 ? ""
                 : `<div class="search-results">${results
                     .map((s) => `
-        <button type="button" class="search-result-item" data-id="${s.id}">
+        <button class="search-result-item" data-id="${s.id}">
           <img class="avatar" src="${avatarUrl(s.photo_url, s.name)}" alt="" />
           <div class="flex-1">
             <p class="text-sm font-medium" style="margin:0">${escapeHtml(s.name)}</p>
@@ -155,8 +155,8 @@ function renderAwardPanel() {
       <textarea class="input" id="remarks-input" maxlength="300" placeholder="Optional note..." rows="3"></textarea>
     </div>
     <div class="flex gap-2">
-      <button type="button" class="btn btn-primary flex-1" id="award-btn">${icon("award")} ${points >= 0 ? "Award Points" : "Deduct Points"}</button>
-      <button type="button" class="btn btn-outline" id="clear-btn">Clear</button>
+      <button class="btn btn-primary flex-1" id="award-btn">${icon("award")} ${points >= 0 ? "Award Points" : "Deduct Points"}</button>
+      <button class="btn btn-outline" id="clear-btn">Clear</button>
     </div>
   `;
     const activitySelect = document.getElementById("activity-select");
@@ -192,12 +192,8 @@ function renderAwardPanel() {
                 remarks,
             });
             toast.success(`${points >= 0 ? "Awarded" : "Deducted"} ${Math.abs(points)} points to ${selectedStudent.name}`);
-            selectedStudent = null;
-            renderAwardPanel();
-            const statsRes = await pointsApi.statsToday();
-            const recentBox = document.getElementById("recent-activity");
-            if (recentBox)
-                recentBox.innerHTML = renderRecent(statsRes.recent);
+            setTimeout(() => window.location.reload(), 500);
+            return;
         }
         catch (err) {
             toast.error(err.message || "Could not award points");
