@@ -10,5 +10,11 @@
     "email": "Dayanand@gurukul.org",
     "password": "Dayanand@123",
     "type": "teacher"
+  },
+  {
+    "name": "Gagan sir",
+    "email": "gagansir@gurukul.org",
+    "password": "Gagan@123",
+    "type": "teacher"
   }
 ]
