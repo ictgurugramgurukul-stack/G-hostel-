@@ -1,5 +1,5 @@
 import { icon } from "../icons.js";
-import { adminApi, studentsApi, activitiesApi, analyticsApi, inspectionsApi } from "../api.js";
+import { adminApi, studentsApi, activitiesApi, analyticsApi, inspectionsApi, pointsApi } from "../api.js";
 import { getToken } from "../session.js";
 import { avatarUrl, escapeHtml, fmtDateTime, debounce } from "../dom.js";
 import { toast } from "../toast.js";
@@ -25,6 +25,7 @@ export async function renderAdminPage(container, me) {
       ${tabBtn("activities", "Activities")}
       ${tabBtn("import", "Excel Import")}
       ${tabBtn("inspections", "Room Inspections")}
+      ${tabBtn("activity-log", "Activity Report")}
       ${tabBtn("analytics", "Analytics")}
       ${tabBtn("audit", "Audit Log")}
     </div>
@@ -55,6 +56,8 @@ async function renderTabs(container, stats) {
         return renderImportTab(box);
     if (activeTab === "inspections")
         return renderInspectionsTab(box);
+    if (activeTab === "activity-log")
+        return renderActivityLogTab(box);
     if (activeTab === "analytics")
         return renderAnalyticsTab(box);
     if (activeTab === "audit")
@@ -474,6 +477,107 @@ async function downloadInspectionsExcel(startDate, endDate, room) {
         const a = document.createElement("a");
         a.href = objectUrl;
         a.download = `room_inspections_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+    }
+    catch (err) {
+        toast.error(err.message || "Download failed");
+    }
+    finally {
+        if (btn)
+            btn.disabled = false;
+    }
+}
+// ---------------- Activity Report tab ----------------
+function renderActivityLogTab(box) {
+    box.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Activity Report</h3>
+        <button class="btn btn-primary btn-sm" id="alog-download-btn">${icon("download")} Download Excel</button>
+      </div>
+      <div class="card-content">
+        <div class="grid sm:grid-cols-3 gap-2 mb-3">
+          <div class="field"><label>Search activity, student or teacher</label><input class="input" id="alog-search" placeholder="e.g. Late for Prayer" /></div>
+          <div class="field"><label>From</label><input class="input" type="date" id="alog-start" /></div>
+          <div class="field"><label>To</label><input class="input" type="date" id="alog-end" /></div>
+        </div>
+        <div id="alog-summary" class="text-sm muted mb-2"></div>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>Date</th><th>Time</th><th>Student</th><th>Activity</th>
+            <th>Points</th><th>Teacher</th><th>Remarks</th>
+          </tr></thead>
+          <tbody id="alog-tbody"><tr><td colspan="7" class="text-center muted">Loading...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+  `;
+    const searchInput = document.getElementById("alog-search");
+    const startInput = document.getElementById("alog-start");
+    const endInput = document.getElementById("alog-end");
+    const reload = debounce(() => loadActivityLog(startInput.value, endInput.value, searchInput.value), 300);
+    searchInput.addEventListener("input", reload);
+    startInput.addEventListener("change", reload);
+    endInput.addEventListener("change", reload);
+    document.getElementById("alog-download-btn")?.addEventListener("click", () => downloadActivityLogExcel(startInput.value, endInput.value, searchInput.value));
+    loadActivityLog("", "", "");
+}
+async function loadActivityLog(startDate, endDate, q) {
+    const tbody = document.getElementById("alog-tbody");
+    const summary = document.getElementById("alog-summary");
+    if (!tbody)
+        return;
+    try {
+        const res = await pointsApi.history({
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            q: q || undefined,
+            limit: 200,
+        });
+        if (summary)
+            summary.textContent = `${res.total} record${res.total === 1 ? "" : "s"} \u2013 showing latest ${res.records.length}`;
+        tbody.innerHTML =
+            res.records.length === 0
+                ? `<tr><td colspan="7" class="text-center muted">No activity records found.</td></tr>`
+                : res.records
+                    .map((r) => `
+      <tr>
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.time)}</td>
+        <td>${escapeHtml(r.student_name)}<br/><span class="text-xs muted">${escapeHtml(r.member_id)}</span></td>
+        <td>${escapeHtml(r.activity_name || "\u2014")}</td>
+        <td><span class="pill ${r.points >= 0 ? "pill-primary" : "pill-destructive"}">${r.points >= 0 ? "+" : ""}${r.points}</span></td>
+        <td>${escapeHtml(r.teacher_name || "\u2014")}</td>
+        <td>${escapeHtml(r.remarks || "\u2014")}</td>
+      </tr>`)
+                    .join("");
+    }
+    catch (err) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="color:var(--destructive)">${escapeHtml(err.message || "Could not load the activity report")}</td></tr>`;
+    }
+}
+async function downloadActivityLogExcel(startDate, endDate, q) {
+    const btn = document.getElementById("alog-download-btn");
+    if (btn)
+        btn.disabled = true;
+    try {
+        const url = pointsApi.exportUrl({
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            q: q || undefined,
+        });
+        const token = getToken();
+        const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (!res.ok)
+            throw new Error("Could not generate the Excel file");
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = `activity_report_${new Date().toISOString().slice(0, 10)}.xlsx`;
         document.body.appendChild(a);
         a.click();
         a.remove();

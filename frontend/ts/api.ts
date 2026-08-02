@@ -85,6 +85,21 @@ export const pointsApi = {
   statsToday: () => request<any>("/api/points/stats/today"),
   award: (data: { student_id: string; activity_id?: string | null; points: number; remarks?: string }) =>
     request<any>("/api/points/award", { method: "POST", body: data }),
+  history: (params: { start_date?: string; end_date?: string; q?: string; limit?: number } = {}) => {
+    const query = new URLSearchParams();
+    if (params.start_date) query.set("start_date", params.start_date);
+    if (params.end_date) query.set("end_date", params.end_date);
+    if (params.q) query.set("q", params.q);
+    if (params.limit) query.set("limit", String(params.limit));
+    return request<any>(`/api/points/history?${query.toString()}`);
+  },
+  exportUrl: (params: { start_date?: string; end_date?: string; q?: string } = {}) => {
+    const query = new URLSearchParams();
+    if (params.start_date) query.set("start_date", params.start_date);
+    if (params.end_date) query.set("end_date", params.end_date);
+    if (params.q) query.set("q", params.q);
+    return `${API_BASE}/api/points/export?${query.toString()}`;
+  },
 };
 
 // ---------- Room Inspections ----------

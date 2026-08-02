@@ -72,6 +72,28 @@ export const pointsApi = {
     top: (limit = 5) => request(`/api/points/top?limit=${limit}`),
     statsToday: () => request("/api/points/stats/today"),
     award: (data) => request("/api/points/award", { method: "POST", body: data }),
+    history: (params = {}) => {
+        const query = new URLSearchParams();
+        if (params.start_date)
+            query.set("start_date", params.start_date);
+        if (params.end_date)
+            query.set("end_date", params.end_date);
+        if (params.q)
+            query.set("q", params.q);
+        if (params.limit)
+            query.set("limit", String(params.limit));
+        return request(`/api/points/history?${query.toString()}`);
+    },
+    exportUrl: (params = {}) => {
+        const query = new URLSearchParams();
+        if (params.start_date)
+            query.set("start_date", params.start_date);
+        if (params.end_date)
+            query.set("end_date", params.end_date);
+        if (params.q)
+            query.set("q", params.q);
+        return `${API_BASE}/api/points/export?${query.toString()}`;
+    },
 };
 // ---------- Room Inspections ----------
 export const inspectionsApi = {

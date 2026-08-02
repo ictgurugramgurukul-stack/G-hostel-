@@ -6,15 +6,19 @@ there's no database service to hold that trigger anymore, the exact same
 logic (same tiers, same thresholds, same messages) now runs right here in
 `award_points`.
 """
+import io
 from datetime import datetime, timedelta
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from openpyxl import Workbook
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.badges import BADGE_TIERS
 from app.db import get_db
-from app.deps import require_staff, get_current_user, CurrentUser
+from app.deps import require_staff, require_admin, get_current_user, CurrentUser
 from app.models_orm import Student, Activity, PointTransaction, Badge, Notification, AuditLog
 from app.schemas import AwardPointsRequest
 from app.serialize import serialize, serialize_many
@@ -138,3 +142,131 @@ def award_points(payload: AwardPointsRequest, user: CurrentUser = Depends(requir
     db.refresh(student)
 
     return {"transaction": serialize(tx), "student": serialize(student)}
+
+
+# ---------------------------------------------------------------------------
+# Activity report: search the day-to-day activity log (every awarded /
+# deducted activity) by activity name, student, or teacher, over a From/To
+# date range, and download it as a plain Excel file.
+# ---------------------------------------------------------------------------
+
+def _parse_date(value: Optional[str]):
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _query_activity_log(db: Session, start_date: Optional[str], end_date: Optional[str], q: Optional[str]):
+    query = db.query(PointTransaction)
+
+    start_dt = _parse_date(start_date)
+    if start_dt:
+        query = query.filter(PointTransaction.created_at >= start_dt)
+
+    end_dt = _parse_date(end_date)
+    if end_dt:
+        query = query.filter(PointTransaction.created_at < end_dt + timedelta(days=1))
+
+    query_text = (q or "").strip()
+    if query_text:
+        like = f"%{query_text}%"
+        student_ids = {
+            s.id
+            for s in db.query(Student)
+            .filter(or_(Student.name.ilike(like), Student.member_id.ilike(like), Student.room_number.ilike(like)))
+            .all()
+        }
+        conditions = [
+            PointTransaction.activity_name.ilike(like),
+            PointTransaction.remarks.ilike(like),
+            PointTransaction.teacher_name.ilike(like),
+        ]
+        if student_ids:
+            conditions.append(PointTransaction.student_id.in_(student_ids))
+        query = query.filter(or_(*conditions))
+
+    return query.order_by(PointTransaction.created_at.desc())
+
+
+@router.get("/history")
+def activity_history(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    q: Optional[str] = None,
+    limit: int = 200,
+    user: CurrentUser = Depends(require_staff),
+    db: Session = Depends(get_db),
+):
+    query = _query_activity_log(db, start_date, end_date, q)
+    total = query.count()
+    txns = query.limit(limit).all()
+    students = {s.id: s for s in db.query(Student).all()}
+
+    records = []
+    for t in txns:
+        s = students.get(t.student_id)
+        records.append({
+            "date": t.created_at.strftime("%Y-%m-%d"),
+            "time": t.created_at.strftime("%H:%M"),
+            "student_name": s.name if s else "(deleted student)",
+            "member_id": s.member_id if s else "",
+            "room_number": s.room_number if s else "",
+            "activity_name": t.activity_name or "",
+            "points": t.points,
+            "teacher_name": t.teacher_name or "",
+            "remarks": t.remarks or "",
+        })
+    return {"total": total, "records": records}
+
+
+@router.get("/export")
+def export_activity_log(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    q: Optional[str] = None,
+    user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    """Plain Excel dump of the activity log - just the raw rows, no header
+    row, no bold/colors/column widths. One row per activity entry:
+    Date, Time, Student Name, Member ID, Activity, Points, Teacher, Remarks.
+    """
+    txns = _query_activity_log(db, start_date, end_date, q).limit(5000).all()
+    students = {s.id: s for s in db.query(Student).all()}
+
+    wb = Workbook()
+    ws = wb.active
+    for t in txns:
+        s = students.get(t.student_id)
+        ws.append([
+            t.created_at.strftime("%Y-%m-%d"),
+            t.created_at.strftime("%H:%M"),
+            s.name if s else "",
+            s.member_id if s else "",
+            t.activity_name or "",
+            t.points,
+            t.teacher_name or "",
+            t.remarks or "",
+        ])
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    db.add(AuditLog(
+        user_id=user.id, actor_name=user.full_name, action="export_activity_log",
+        details=f"{len(txns)} records ({start_date or 'all'} to {end_date or 'all'})",
+    ))
+    db.commit()
+
+    stamp = datetime.utcnow().strftime("%Y%m%d")
+    filename = f"activity_report_{stamp}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

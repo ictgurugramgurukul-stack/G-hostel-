@@ -1,6 +1,8 @@
 import { icon } from "../icons.js";
 import { isLoggedIn } from "../session.js";
 
+const QUIZ_URL = "https://gquiz-hcl0.onrender.com";
+
 const features = [
   { iconName: "award", title: "Award Points", desc: "Teachers reward good behaviour, discipline and participation instantly." },
   { iconName: "trophy", title: "Live Leaderboards", desc: "Overall, house-wise, class-wise and monthly rankings." },
@@ -49,6 +51,17 @@ function render(): void {
           </div>`
           )
           .join("")}
+      </div>
+    </section>
+
+    <section class="container" id="quiz">
+      <div class="quiz-cta">
+        <div class="quiz-cta-icon">${icon("help-circle")}</div>
+        <h2>Think you know the rules?</h2>
+        <p>Put your hostel know-how to the test on G Quiz &mdash; a quick, fun quiz for students and staff.</p>
+        <a class="btn btn-primary btn-lg" href="${QUIZ_URL}" target="_blank" rel="noopener noreferrer">
+          Launch G Quiz ${icon("external-link")}
+        </a>
       </div>
     </section>
 
