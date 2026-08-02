@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from app.config import settings
 from app.db import Base, engine, SessionLocal
 from app.models_orm import Activity, House, Student
-from app.routers import auth, students, activities, points, leaderboard, dashboard, admin, analytics
+from app.routers import auth, students, activities, points, leaderboard, dashboard, admin, analytics, inspections
 from app.staff_accounts import sync_staff_accounts
 
 app = FastAPI(title="Gurukul Rewards API", version="1.0.0")
@@ -40,6 +40,7 @@ app.include_router(leaderboard.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 app.include_router(analytics.router)
+app.include_router(inspections.router)
 
 
 DEFAULT_ACTIVITIES = [

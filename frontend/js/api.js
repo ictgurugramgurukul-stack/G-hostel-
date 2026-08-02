@@ -73,6 +73,33 @@ export const pointsApi = {
     statsToday: () => request("/api/points/stats/today"),
     award: (data) => request("/api/points/award", { method: "POST", body: data }),
 };
+// ---------- Room Inspections ----------
+export const inspectionsApi = {
+    today: (date) => request(`/api/inspections/today${date ? `?date=${encodeURIComponent(date)}` : ""}`),
+    submit: (data) => request("/api/inspections", { method: "POST", body: data }),
+    history: (params = {}) => {
+        const q = new URLSearchParams();
+        if (params.start_date)
+            q.set("start_date", params.start_date);
+        if (params.end_date)
+            q.set("end_date", params.end_date);
+        if (params.room)
+            q.set("room", params.room);
+        if (params.limit)
+            q.set("limit", String(params.limit));
+        return request(`/api/inspections/history?${q.toString()}`);
+    },
+    exportUrl: (params = {}) => {
+        const q = new URLSearchParams();
+        if (params.start_date)
+            q.set("start_date", params.start_date);
+        if (params.end_date)
+            q.set("end_date", params.end_date);
+        if (params.room)
+            q.set("room", params.room);
+        return `${API_BASE}/api/inspections/export?${q.toString()}`;
+    },
+};
 // ---------- Leaderboard ----------
 export const leaderboardApi = {
     get: (params) => {

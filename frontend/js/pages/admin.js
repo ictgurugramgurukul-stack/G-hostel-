@@ -1,5 +1,6 @@
 import { icon } from "../icons.js";
-import { adminApi, studentsApi, activitiesApi, analyticsApi } from "../api.js";
+import { adminApi, studentsApi, activitiesApi, analyticsApi, inspectionsApi } from "../api.js";
+import { getToken } from "../session.js";
 import { avatarUrl, escapeHtml, fmtDateTime, debounce } from "../dom.js";
 import { toast } from "../toast.js";
 import { confirmDialog, openModal } from "../modal.js";
@@ -23,6 +24,7 @@ export async function renderAdminPage(container, me) {
       ${tabBtn("students", "Students")}
       ${tabBtn("activities", "Activities")}
       ${tabBtn("import", "Excel Import")}
+      ${tabBtn("inspections", "Room Inspections")}
       ${tabBtn("analytics", "Analytics")}
       ${tabBtn("audit", "Audit Log")}
     </div>
@@ -51,6 +53,8 @@ async function renderTabs(container, stats) {
         return renderActivitiesTab(box);
     if (activeTab === "import")
         return renderImportTab(box);
+    if (activeTab === "inspections")
+        return renderInspectionsTab(box);
     if (activeTab === "analytics")
         return renderAnalyticsTab(box);
     if (activeTab === "audit")
@@ -374,6 +378,113 @@ async function doImport(file) {
     }
     catch (err) {
         summaryBox.innerHTML = `<p class="text-sm" style="color:var(--destructive)">${escapeHtml(err.message || "Import failed")}</p>`;
+    }
+}
+// ---------------- Room Inspections tab ----------------
+const INSPECTION_COLUMNS = [
+    { key: "bed_arrangement", label: "Bed Arrangement" },
+    { key: "cupboard", label: "Cupboard" },
+    { key: "cleanliness", label: "Cleanliness" },
+    { key: "blanket_folded", label: "Blanket Folded" },
+];
+function renderInspectionsTab(box) {
+    box.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Room Inspections</h3>
+        <button class="btn btn-primary btn-sm" id="insp-download-btn">${icon("download")} Download Excel</button>
+      </div>
+      <div class="card-content">
+        <div class="grid sm:grid-cols-3 gap-2 mb-3">
+          <div class="field"><label>From</label><input class="input" type="date" id="insp-start" /></div>
+          <div class="field"><label>To</label><input class="input" type="date" id="insp-end" /></div>
+          <div class="field"><label>Room</label><input class="input" id="insp-room" placeholder="e.g. B-12" /></div>
+        </div>
+        <div id="insp-summary" class="text-sm muted mb-2"></div>
+        <div class="table-wrap"><table>
+          <thead><tr>
+            <th>Date</th><th>Student</th><th>Room</th>
+            ${INSPECTION_COLUMNS.map((c) => `<th class="text-center">${c.label}</th>`).join("")}
+            <th>Remarks</th><th>Recorded By</th>
+          </tr></thead>
+          <tbody id="insp-tbody"><tr><td colspan="9" class="text-center muted">Loading...</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+  `;
+    const startInput = document.getElementById("insp-start");
+    const endInput = document.getElementById("insp-end");
+    const roomInput = document.getElementById("insp-room");
+    const reload = debounce(() => loadInspectionHistory(startInput.value, endInput.value, roomInput.value), 300);
+    startInput.addEventListener("change", reload);
+    endInput.addEventListener("change", reload);
+    roomInput.addEventListener("input", reload);
+    document.getElementById("insp-download-btn")?.addEventListener("click", () => downloadInspectionsExcel(startInput.value, endInput.value, roomInput.value));
+    loadInspectionHistory("", "", "");
+}
+async function loadInspectionHistory(startDate, endDate, room) {
+    const tbody = document.getElementById("insp-tbody");
+    const summary = document.getElementById("insp-summary");
+    if (!tbody)
+        return;
+    try {
+        const res = await inspectionsApi.history({
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            room: room || undefined,
+            limit: 100,
+        });
+        if (summary)
+            summary.textContent = `${res.total} record${res.total === 1 ? "" : "s"} \u2013 showing latest ${res.records.length}`;
+        tbody.innerHTML =
+            res.records.length === 0
+                ? `<tr><td colspan="9" class="text-center muted">No inspection records yet.</td></tr>`
+                : res.records
+                    .map((r) => `
+      <tr>
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.student_name)}<br/><span class="text-xs muted">${escapeHtml(r.member_id)}</span></td>
+        <td>${escapeHtml(r.room_number || "\u2014")}</td>
+        ${INSPECTION_COLUMNS.map((c) => `<td class="text-center">${r[c.key] ? icon("check-circle") : icon("x-circle")}</td>`).join("")}
+        <td>${escapeHtml(r.remarks || "\u2014")}</td>
+        <td>${escapeHtml(r.teacher_name || "\u2014")}</td>
+      </tr>`)
+                    .join("");
+    }
+    catch (err) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color:var(--destructive)">${escapeHtml(err.message || "Could not load inspections")}</td></tr>`;
+    }
+}
+async function downloadInspectionsExcel(startDate, endDate, room) {
+    const btn = document.getElementById("insp-download-btn");
+    if (btn)
+        btn.disabled = true;
+    try {
+        const url = inspectionsApi.exportUrl({
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
+            room: room || undefined,
+        });
+        const token = getToken();
+        const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (!res.ok)
+            throw new Error("Could not generate the Excel file");
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = `room_inspections_${new Date().toISOString().slice(0, 10)}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+    }
+    catch (err) {
+        toast.error(err.message || "Download failed");
+    }
+    finally {
+        if (btn)
+            btn.disabled = false;
     }
 }
 // ---------------- Analytics tab ----------------

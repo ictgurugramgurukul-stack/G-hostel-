@@ -30,6 +30,7 @@ const PATHS = {
     "file-spreadsheet": '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 13v6"/>',
     "log-out": '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
     eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+    "clipboard-check": '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 13l2 2 4-4"/>',
 };
 export function icon(name, cls = "icon") {
     const path = PATHS[name] || PATHS.star;

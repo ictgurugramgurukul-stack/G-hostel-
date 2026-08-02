@@ -134,6 +134,16 @@ class AuditLog(BaseModel):
     created_at: Optional[str] = None
 
 
+class InspectionSubmit(BaseModel):
+    student_id: str
+    date: Optional[str] = None  # "YYYY-MM-DD"; defaults to today (server time) if omitted
+    bed_arrangement: bool = False
+    cupboard: bool = False
+    cleanliness: bool = False
+    blanket_folded: bool = False
+    remarks: Optional[str] = None
+
+
 class StaffSigninRequest(BaseModel):
     email: str
     password: str

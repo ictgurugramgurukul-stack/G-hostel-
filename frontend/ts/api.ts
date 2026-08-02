@@ -87,6 +87,35 @@ export const pointsApi = {
     request<any>("/api/points/award", { method: "POST", body: data }),
 };
 
+// ---------- Room Inspections ----------
+export const inspectionsApi = {
+  today: (date?: string) => request<any>(`/api/inspections/today${date ? `?date=${encodeURIComponent(date)}` : ""}`),
+  submit: (data: {
+    student_id: string;
+    date?: string;
+    bed_arrangement: boolean;
+    cupboard: boolean;
+    cleanliness: boolean;
+    blanket_folded: boolean;
+    remarks?: string;
+  }) => request<any>("/api/inspections", { method: "POST", body: data }),
+  history: (params: { start_date?: string; end_date?: string; room?: string; limit?: number } = {}) => {
+    const q = new URLSearchParams();
+    if (params.start_date) q.set("start_date", params.start_date);
+    if (params.end_date) q.set("end_date", params.end_date);
+    if (params.room) q.set("room", params.room);
+    if (params.limit) q.set("limit", String(params.limit));
+    return request<any>(`/api/inspections/history?${q.toString()}`);
+  },
+  exportUrl: (params: { start_date?: string; end_date?: string; room?: string } = {}) => {
+    const q = new URLSearchParams();
+    if (params.start_date) q.set("start_date", params.start_date);
+    if (params.end_date) q.set("end_date", params.end_date);
+    if (params.room) q.set("room", params.room);
+    return `${API_BASE}/api/inspections/export?${q.toString()}`;
+  },
+};
+
 // ---------- Leaderboard ----------
 export const leaderboardApi = {
   get: (params: { period?: string; house?: string; klass?: string; top_n?: number }) => {

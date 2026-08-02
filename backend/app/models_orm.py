@@ -127,6 +127,28 @@ class House(Base):
     color = Column(String, nullable=True)
 
 
+class RoomInspection(Base):
+    """Daily room-check record. A teacher ticks off the checklist for a
+    student's room once per day; (student_id, date) is unique so re-ticking
+    the same day updates the existing record instead of duplicating it."""
+
+    __tablename__ = "room_inspections"
+    __table_args__ = (UniqueConstraint("student_id", "date", name="uq_room_inspection_student_date"),)
+
+    id = Column(String, primary_key=True, default=gen_id)
+    student_id = Column(String, ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    teacher_id = Column(String, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    teacher_name = Column(String, nullable=True)
+    date = Column(String, nullable=False, index=True)  # "YYYY-MM-DD"
+    bed_arrangement = Column(Boolean, nullable=False, default=False)
+    cupboard = Column(Boolean, nullable=False, default=False)
+    cleanliness = Column(Boolean, nullable=False, default=False)
+    blanket_folded = Column(Boolean, nullable=False, default=False)
+    remarks = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
