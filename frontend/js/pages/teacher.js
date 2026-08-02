@@ -17,6 +17,24 @@ function todayStr() {
     const day = String(d.getDate()).padStart(2, "0");
     return `${d.getFullYear()}-${m}-${day}`;
 }
+function activityLabel(id) {
+    const a = activities.find((x) => x.id === id);
+    return a ? `${a.name} (${a.points >= 0 ? "+" : ""}${a.points})` : "";
+}
+// Matches by activity name (substring) or, if the query looks like a
+// number (e.g. "-3" or "5"), by exact points value - so searching "-3"
+// surfaces every activity worth -3 points.
+function activityMatchesQuery(a, rawQuery) {
+    const query = rawQuery.trim().toLowerCase();
+    if (!query)
+        return true;
+    if (a.name.toLowerCase().includes(query))
+        return true;
+    if (/^[-+]?\d+$/.test(query)) {
+        return a.points === Number(query);
+    }
+    return false;
+}
 export async function renderTeacherPage(container, me) {
     container.innerHTML = `<div class="loading-page">Loading...</div>`;
     container.innerHTML = `
@@ -173,11 +191,11 @@ function renderAwardPanel() {
     <div class="grid sm:grid-cols-2 gap-4 mt-4">
       <div class="field">
         <label>Activity</label>
-        <select class="input" id="activity-select">
-          ${activities
-        .map((a) => `<option value="${a.id}" ${a.id === selectedActivityId ? "selected" : ""}>${escapeHtml(a.name)} (${a.points >= 0 ? "+" : ""}${a.points})</option>`)
-        .join("")}
-        </select>
+        <div class="input-icon-wrap">
+          <span class="icon">${icon("search")}</span>
+          <input class="input" id="activity-search-input" placeholder="Search activity, e.g. 'Eating in study hours' or '-3'" value="${escapeHtml(activityLabel(selectedActivityId))}" autocomplete="off" />
+        </div>
+        <div id="activity-search-results"></div>
       </div>
       <div class="field">
         <label>Points</label>
@@ -193,17 +211,48 @@ function renderAwardPanel() {
       <button class="btn btn-outline" id="clear-btn">Clear</button>
     </div>
   `;
-    const activitySelect = document.getElementById("activity-select");
+    const activitySearchInput = document.getElementById("activity-search-input");
+    const activityResultsBox = document.getElementById("activity-search-results");
     const pointsInput = document.getElementById("points-input");
     const awardBtn = document.getElementById("award-btn");
-    activitySelect.addEventListener("change", () => {
-        selectedActivityId = activitySelect.value;
-        const a = activities.find((x) => x.id === selectedActivityId);
-        if (a) {
-            points = a.points;
-            pointsInput.value = String(points);
-            awardBtn.innerHTML = `${icon("award")} ${points >= 0 ? "Award Points" : "Deduct Points"}`;
-        }
+    const pickActivity = (a) => {
+        selectedActivityId = a.id;
+        points = a.points;
+        activitySearchInput.value = activityLabel(a.id);
+        pointsInput.value = String(points);
+        awardBtn.innerHTML = `${icon("award")} ${points >= 0 ? "Award Points" : "Deduct Points"}`;
+        activityResultsBox.innerHTML = "";
+    };
+    const renderActivityMatches = () => {
+        const query = activitySearchInput.value.trim();
+        const matches = activities.filter((a) => activityMatchesQuery(a, query));
+        activityResultsBox.innerHTML =
+            matches.length === 0
+                ? `<div class="search-results"><p class="text-xs muted" style="padding:.5rem .75rem;margin:0">No matching activities.</p></div>`
+                : `<div class="search-results">${matches
+                    .map((a) => `
+        <button type="button" class="search-result-item" data-id="${a.id}">
+          <div class="flex-1">
+            <p class="text-sm font-medium" style="margin:0">${escapeHtml(a.name)}</p>
+          </div>
+          <span class="pill ${a.points >= 0 ? "pill-primary" : "pill-destructive"}">${a.points >= 0 ? "+" : ""}${a.points}</span>
+        </button>`)
+                    .join("")}</div>`;
+        activityResultsBox.querySelectorAll("[data-id]").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const a = activities.find((x) => x.id === btn.dataset.id);
+                if (a)
+                    pickActivity(a);
+            });
+        });
+    };
+    activitySearchInput.addEventListener("focus", renderActivityMatches);
+    activitySearchInput.addEventListener("input", debounce(renderActivityMatches, 150));
+    activitySearchInput.addEventListener("blur", () => {
+        // Let a click on a result register before the list disappears.
+        setTimeout(() => {
+            activityResultsBox.innerHTML = "";
+        }, 150);
     });
     pointsInput.addEventListener("input", () => {
         points = Number(pointsInput.value);
@@ -274,7 +323,7 @@ async function renderInspectionTab(box) {
           <span class="icon">${icon("search")}</span>
           <input class="input" id="inspection-search" placeholder="Search by name, member ID or room..." />
         </div>
-        <p class="text-xs muted" style="margin:0 0 .75rem">Tick each box as you inspect a room. Changes save automatically. An admin can download the full history as an Excel file.</p>
+        <p class="text-xs muted" style="margin:0 0 .75rem">Tick each box as you inspect a room. Changes save automatically. Any item left unticked (e.g. blanket not folded, cleanliness not done) automatically deducts 3 points per item - re-ticking it later refunds those points. An admin can download the full history as an Excel file.</p>
         <div class="table-wrap"><table>
           <thead>
             <tr>
@@ -348,9 +397,10 @@ async function saveInspectionRow(tr, studentId) {
     if (statusEl)
         statusEl.textContent = "Saving...";
     try {
-        await inspectionsApi.submit(data);
-        if (statusEl)
-            statusEl.textContent = "Saved";
+        const res = await inspectionsApi.submit(data);
+        if (statusEl) {
+            statusEl.textContent = res.auto_deducted_points > 0 ? `Saved (-${res.auto_deducted_points} pts)` : "Saved";
+        }
         const row = inspectionRows.find((r) => r.student_id === studentId);
         if (row)
             Object.assign(row, data, { recorded: true });

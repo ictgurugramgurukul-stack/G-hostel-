@@ -15,6 +15,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
 
 from app.config import settings
 from app.db import Base, engine, SessionLocal
@@ -106,9 +107,22 @@ DEFAULT_HOUSES = [
 ]
 
 
+def _ensure_column(table: str, column: str, ddl: str) -> None:
+    """Adds a column to an existing SQLite table if it isn't there yet.
+    Base.metadata.create_all only creates missing *tables*, so on an
+    existing gurukul.db from before this column existed, it needs to be
+    added by hand once."""
+    with engine.connect() as conn:
+        existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
+        if column not in existing:
+            conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {ddl}"))
+            conn.commit()
+
+
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    _ensure_column("room_inspections", "auto_deducted_points", "auto_deducted_points INTEGER NOT NULL DEFAULT 0")
     db = SessionLocal()
     try:
         if db.query(Activity).count() == 0:

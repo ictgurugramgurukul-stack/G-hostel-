@@ -144,6 +144,7 @@ class RoomInspection(Base):
     cupboard = Column(Boolean, nullable=False, default=False)
     cleanliness = Column(Boolean, nullable=False, default=False)
     blanket_folded = Column(Boolean, nullable=False, default=False)
+    auto_deducted_points = Column(Integer, nullable=False, default=0)
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

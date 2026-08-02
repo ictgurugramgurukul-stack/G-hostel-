@@ -19,10 +19,22 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import require_admin, require_staff, CurrentUser
-from app.models_orm import AuditLog, RoomInspection, Student
+from app.models_orm import AuditLog, PointTransaction, RoomInspection, Student
 from app.schemas import InspectionSubmit
 
 router = APIRouter(prefix="/api/inspections", tags=["inspections"])
+
+# Every unticked checklist item costs the student this many points,
+# deducted automatically the moment the box is left unchecked - no separate
+# "Activity" needs to be awarded by hand for it.
+AUTO_DEDUCT_PER_ITEM = 3
+CHECKLIST_LABELS = {
+    "bed_arrangement": "Bed Arrangement Not Done",
+    "cupboard": "Cupboard Not Organized",
+    "cleanliness": "Cleanliness Not Done",
+    "blanket_folded": "Blanket Not Folded",
+}
+CHECKLIST_KEYS = ("bed_arrangement", "cupboard", "cleanliness", "blanket_folded")
 
 
 def _today() -> str:
@@ -88,6 +100,28 @@ def submit_checklist(payload: InspectionSubmit, user: CurrentUser = Depends(requ
     record.teacher_id = user.id
     record.teacher_name = user.full_name
 
+    # ---- auto-deduct for anything left unticked (idempotent) ----
+    # Re-saving the same day's checklist must never deduct twice, so we
+    # only ever charge the *difference* between what's already been
+    # deducted for this record and what should be deducted now.
+    unchecked = [k for k in CHECKLIST_KEYS if not getattr(record, k)]
+    target_deduction = AUTO_DEDUCT_PER_ITEM * len(unchecked)
+    already_deducted = record.auto_deducted_points or 0
+    delta = already_deducted - target_deduction  # negative = deduct more, positive = refund
+
+    if delta != 0:
+        student.total_points += delta
+        db.add(PointTransaction(
+            student_id=student.id,
+            activity_id=None,
+            teacher_id=user.id,
+            teacher_name=user.full_name,
+            activity_name="Room Inspection: " + (", ".join(CHECKLIST_LABELS[k] for k in unchecked) if unchecked else "All Items Done"),
+            points=delta,
+            remarks=f"Auto-{'deducted' if delta < 0 else 'restored'} from room inspection on {the_date}",
+        ))
+        record.auto_deducted_points = target_deduction
+
     db.add(AuditLog(
         user_id=user.id, actor_name=user.full_name, action="room_inspection",
         details=f"{student.name} ({student.member_id}) \u2013 {the_date}",
@@ -103,6 +137,7 @@ def submit_checklist(payload: InspectionSubmit, user: CurrentUser = Depends(requ
         "cupboard": record.cupboard,
         "cleanliness": record.cleanliness,
         "blanket_folded": record.blanket_folded,
+        "auto_deducted_points": record.auto_deducted_points,
     }
 
 
